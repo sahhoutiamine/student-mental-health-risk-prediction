@@ -1,0 +1,162 @@
+# ===============================================================
+# Student Mental Health Risk Prediction - local stack
+#
+# Services:
+#   postgres           : Airflow metadata database
+#   airflow-init       : one-shot DB migration and admin user creation
+#   airflow-webserver  : Airflow UI (http://localhost:8080)
+#   airflow-scheduler  : schedules and runs the DAGs
+#   streamlit          : dashboard and prediction app (http://localhost:8501)
+#   jupyter            : JupyterLab, only with the "dev" profile
+#
+# Usage:
+#   cp .env.example .env
+#   docker compose up airflow-init
+#   docker compose up -d
+#   docker compose --profile dev up -d jupyter
+# ===============================================================
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    target: airflow
+  image: student-mh-airflow:latest
+  user: "${AIRFLOW_UID:-50000}:0"
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-change-me}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: utc
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "30"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+    AIRFLOW__SMTP__SMTP_HOST: ${AIRFLOW__SMTP__SMTP_HOST:-}
+    AIRFLOW__SMTP__SMTP_PORT: ${AIRFLOW__SMTP__SMTP_PORT:-587}
+    AIRFLOW__SMTP__SMTP_USER: ${AIRFLOW__SMTP__SMTP_USER:-}
+    AIRFLOW__SMTP__SMTP_PASSWORD: ${AIRFLOW__SMTP__SMTP_PASSWORD:-}
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${AIRFLOW__SMTP__SMTP_MAIL_FROM:-}
+    AIRFLOW_ALERT_EMAIL: ${AIRFLOW_ALERT_EMAIL:-}
+    PYTHONPATH: /opt/project
+    PROJECT_ROOT: /opt/project
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./src:/opt/project/src
+    - ./data:/opt/project/data
+    - ./models:/opt/project/models
+    - ./reports:/opt/project/reports
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smh-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: ${POSTGRES_DB:-airflow}
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airflow} -d ${POSTGRES_DB:-airflow}"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: smh-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins
+        airflow db migrate
+        airflow users create \
+          --username "${AIRFLOW_ADMIN_USER:-admin}" \
+          --password "${AIRFLOW_ADMIN_PASSWORD:-admin}" \
+          --firstname Admin --lastname User \
+          --role Admin \
+          --email "${AIRFLOW_ADMIN_EMAIL:-admin@example.com}" || true
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: smh-airflow-webserver
+    command: webserver
+    ports:
+      - "${AIRFLOW_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: smh-airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob", "--hostname", "$${HOSTNAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  streamlit:
+    build:
+      context: .
+      target: app
+    image: student-mh-app:latest
+    container_name: smh-streamlit
+    command: >
+      streamlit run app/streamlit_app.py
+      --server.port=8501 --server.address=0.0.0.0
+    environment:
+      PYTHONPATH: /opt/project
+      PROJECT_ROOT: /opt/project
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    volumes:
+      - ./app:/opt/project/app
+      - ./src:/opt/project/src
+      - ./data:/opt/project/data
+      - ./models:/opt/project/models
+      - ./reports:/opt/project/reports
+    restart: unless-stopped
+
+  jupyter:
+    build:
+      context: .
+      target: app
+    image: student-mh-app:latest
+    container_name: smh-jupyter
+    profiles: ["dev"]
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+      --ServerApp.token='' --ServerApp.password=''
+      --notebook-dir=/opt/project/notebooks
+    environment:
+      PYTHONPATH: /opt/project
+      PROJECT_ROOT: /opt/project
+    ports:
+      - "127.0.0.1:${JUPYTER_PORT:-8888}:8888"
+    volumes:
+      - ./notebooks:/opt/project/notebooks
+      - ./src:/opt/project/src
+      - ./data:/opt/project/data
+      - ./models:/opt/project/models
+      - ./reports:/opt/project/reports
+    restart: unless-stopped
+
+volumes:
+  postgres-db-volume:

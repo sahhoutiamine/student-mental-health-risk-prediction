@@ -1,0 +1,161 @@
+# ---------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+develop-eggs/
+eggs/
+.eggs/
+sdist/
+wheels/
+pip-wheel-metadata/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ---------------------------------------------------------------
+# Virtual environments
+# ---------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+conda-meta/
+
+# ---------------------------------------------------------------
+# Environment variables and secrets
+# ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# ---------------------------------------------------------------
+# Jupyter
+# ---------------------------------------------------------------
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+.virtual_documents/
+
+# ---------------------------------------------------------------
+# Data (keep folder structure, ignore content)
+# Remove these rules only if the dataset is small and allowed to be public
+# ---------------------------------------------------------------
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+*.sqlite
+*.sqlite3
+*.db
+
+# ---------------------------------------------------------------
+# Trained models and artifacts
+# Remove these rules if you want to version the final pipeline
+# ---------------------------------------------------------------
+models/*
+!models/.gitkeep
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.onnx
+
+# ---------------------------------------------------------------
+# Reports (generated outputs)
+# ---------------------------------------------------------------
+reports/figures/*
+reports/metrics/*
+!reports/figures/.gitkeep
+!reports/metrics/.gitkeep
+
+# ---------------------------------------------------------------
+# Airflow
+# ---------------------------------------------------------------
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/airflow.db
+airflow/airflow.cfg
+airflow/webserver_config.py
+airflow/standalone_admin_password.txt
+airflow-webserver.pid
+airflow-scheduler.pid
+logs/
+unittests.cfg
+
+# ---------------------------------------------------------------
+# Streamlit
+# ---------------------------------------------------------------
+.streamlit/secrets.toml
+
+# ---------------------------------------------------------------
+# Docker
+# ---------------------------------------------------------------
+docker-compose.override.yml
+postgres-data/
+pgdata/
+
+# ---------------------------------------------------------------
+# Testing, coverage, linting caches
+# ---------------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.dmypy.json
+
+# ---------------------------------------------------------------
+# IDE and editor files
+# ---------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# ---------------------------------------------------------------
+# Operating system files
+# ---------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---------------------------------------------------------------
+# Misc
+# ---------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+.cache/
+mlruns/
