@@ -8,10 +8,10 @@
 # ===============================================================
 
 # --- Data manipulation ---
-numpy>=1.26,<2.0
+numpy==1.26.4
+pyarrow==17.0.0
 pandas>=2.1,<2.3
 scipy>=1.11,<1.14
-pyarrow>=14.0
 
 # --- Machine learning ---
 scikit-learn>=1.4,<1.6
