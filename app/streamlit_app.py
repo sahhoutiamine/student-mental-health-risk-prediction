@@ -12,7 +12,6 @@ st.set_page_config(page_title="Student Mental Health", layout="wide")
 st.title("Student Mental Health Risk Analysis")
 st.warning("Educational prototype only. Not a medical diagnostic or screening tool.")
 
-# Load saved results
 model = joblib.load(ROOT / "models/best_model.joblib")
 metrics = json.loads((ROOT / "models/final_metrics.json").read_text())
 results = pd.read_csv(ROOT / "models/baseline_results.csv", index_col=0)
